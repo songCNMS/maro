@@ -1,6 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import sys
+sys.path.append('/data/songlei/maro/')
+
 from typing import List, Optional
 
 from maro.simulator import Env
@@ -63,12 +66,11 @@ if __name__ == "__main__":
     env = Env(
         scenario="oncall_routing", topology="example", start_tick=0, durations=1440,
     )
-
+    print(env.configs)
     env.reset(keep_seed=True)
     metrics, decision_event, is_done = env.step(None)
     while not is_done:
         assert isinstance(decision_event, OncallRoutingPayload)
         print(f"Processing {len(decision_event.oncall_orders)} oncall orders at tick {env.tick}.")
         metrics, decision_event, is_done = env.step(_get_actions(env, decision_event))
-
     print(metrics)
