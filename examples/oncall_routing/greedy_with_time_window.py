@@ -137,6 +137,15 @@ def _get_actions(running_env: Env, event: OncallRoutingPayload) -> List[Action]:
     return actions
 
 
+def get_greedy_with_time_window_metrics(env):
+    env.reset(keep_seed=True)
+    metrics, decision_event, is_done = env.step(None)
+    while not is_done:
+        assert isinstance(decision_event, OncallRoutingPayload)
+        metrics, decision_event, is_done = env.step(_get_actions(env, decision_event))
+    return metrics
+
+
 # Greedy: assign each on-call order to the closest stop on existing route.
 if __name__ == "__main__":
     env = Env(

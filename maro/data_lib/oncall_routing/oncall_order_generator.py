@@ -121,7 +121,7 @@ class SampleOncallOrderGenerator(OncallOrderGenerator):
 
         buff.sort(key=lambda x: x[0])
         self._queue = deque(buff)
-
+        print('oncall', len(buff))
 
 def get_oncall_generator(
     config_path: str,

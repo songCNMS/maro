@@ -5,7 +5,7 @@ station:
   longitude: -117.0718922
   close_rtb: 960 # Unit: tick
 
-interrupt_cycle: 10
+interrupt_cycle: 1
 
 order_transition:
   buffer_before_open_time: 30 # Unit: tick; how long it could be ready in advance
