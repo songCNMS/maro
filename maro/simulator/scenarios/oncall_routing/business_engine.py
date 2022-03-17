@@ -331,7 +331,7 @@ class OncallRoutingBusinessEngine(AbsBusinessEngine):
                     get_estimated_duration_predictor_func=lambda: self._estimated_duration_predictor,
                     get_route_meta_info_dict_func=partial(self._get_route_meta_info_dict, tick),
                     get_delayed_orders_func=lambda: [(clone(order), t) for order, t in self._delayed_orders],
-                    get_terminated_orders_func=lambda: [clone(order) for order in self._terminated_orders],
+                    get_terminated_orders_func=lambda: [clone(order) for order in self._terminated_orders]
                 )
             )
             self._event_buffer.insert_event(decision_event)
@@ -511,8 +511,8 @@ class OncallRoutingBusinessEngine(AbsBusinessEngine):
                 continue
 
             elif order_status == OrderStatus.TERMINATED:
-                self._total_order_terminated += 1
-                self._terminated_orders.append(order)
+                # self._total_order_terminated += 1
+                # self._terminated_orders.append(order)
                 plan.pop(0)
                 continue
 
@@ -525,7 +525,7 @@ class OncallRoutingBusinessEngine(AbsBusinessEngine):
                 carrier.total_delayed_time += event.tick + processing_time - order.close_time
                 self._total_order_delayed += 1
                 self._total_order_delay_time += event.tick + processing_time - order.close_time
-                self._delayed_orders.append((order, event.tick, 'D'))
+                self._delayed_orders.append((order, event.tick))
 
             self._total_order_completed += 1
             order.set_status(OrderStatus.COMPLETED)
@@ -674,7 +674,8 @@ class OncallRoutingBusinessEngine(AbsBusinessEngine):
                     },
                     get_estimated_duration_predictor_func=lambda: self._estimated_duration_predictor,
                     get_route_meta_info_dict_func=partial(self._get_route_meta_info_dict, event.tick),
-                    get_delayed_orders_func=lambda: [(clone(order), t, type) for order, t, type in self._delayed_orders]
+                    get_delayed_orders_func=lambda: [(clone(order), t) for order, t in self._delayed_orders],
+                    get_terminated_orders_func=lambda: [clone(order) for order in self._terminated_orders]
                 )
             )
             event.add_immediate_event(decision_event)
