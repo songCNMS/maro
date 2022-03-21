@@ -39,7 +39,7 @@ class EstimatedDurationPredictor:
                 self._cache[key] = 0
             else:
                 distance = geo_distance_meter(source_coordinate, target_coordinate)
-                self._cache[key] = int(math.ceil(max(1.0, distance / 200.0)))  # TODO: fake
+                self._cache[key] = int(math.ceil(max(1.0, distance / 500.0)))  # TODO: fake
                 self._cache[key] = min(self._cache[key], self._duration_limit)  # TODO
         return self._cache[key]
 
