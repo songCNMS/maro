@@ -5,6 +5,7 @@ from abc import abstractmethod
 from typing import Dict, List
 
 import pandas as pd
+import numpy as np
 
 from maro.simulator.scenarios.oncall_routing import Coordinate, Order, OrderIdGenerator
 from maro.simulator.scenarios.oncall_routing.coordinate import CoordinateClipper
@@ -25,7 +26,9 @@ def _load_orders_by_route_simple(
 
     route_names = sorted(list(set(df["ROUTENBR"])))
     orders_by_route = {}
-    for route_name in route_names:
+    route_num = 100
+    sampled_route_names = np.random.choice(route_names, size=route_num, replace=False)
+    for route_name in sampled_route_names:
         data = df[df["ROUTENBR"] == route_name]
         data.sort_values(by=['STOPTIME'])
 

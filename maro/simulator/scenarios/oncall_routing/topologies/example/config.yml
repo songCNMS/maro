@@ -1,16 +1,16 @@
-seed: 2048
+seed: 1024
 
 station:
   latitude: 32.72329226
   longitude: -117.0718922
-  close_rtb: 1440 # Unit: tick
+  close_rtb: 1080 # Unit: tick
 
 interrupt_cycle: 1
 
 order_transition:
-  buffer_before_open_time: 30 # Unit: tick; how long it could be ready in advance
-  buffer_after_open_time: 30  # Unit: tick; actual termination tick would be min(close + buffer, rtb)
-  last_tick_for_order_processing: 1440  # Unit: tick
+  buffer_before_open_time: 10 # Unit: tick; how long it could be ready in advance
+  buffer_after_open_time: 10  # Unit: tick; actual termination tick would be min(close + buffer, rtb)
+  last_tick_for_order_processing: 1080  # Unit: tick
   processing_time: 1  # Unit: tick
   processing_proportion_to_quantity: False  # If True, processing_time * order quantity to process
 
@@ -18,6 +18,6 @@ data_loader_config:
   data_loader_type: "history" # history, sample
   oncall_generator_type: "sample" # history, sample
   start_tick: 480
-  end_tick: 1439
+  end_tick: 1080
   coordinate_keep_digit: 5
-  duration_limit: 30
+  duration_limit: 10

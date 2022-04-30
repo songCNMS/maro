@@ -12,12 +12,15 @@ from maro.utils import set_seeds
 
 from examples.oncall_routing.utils import refresh_segment_index
 
-set_seeds(0)
+set_seeds(1024)
 
 
-def _get_actions(running_env: Env, event: OncallRoutingPayload) -> List[Action]:
+def _get_actions(running_env: Env, event: OncallRoutingPayload, oncall_order=None) -> List[Action]:
     tick = running_env.tick
-    oncall_orders = event.oncall_orders
+    if oncall_order:
+        oncall_orders = [oncall_order]
+    else:
+        oncall_orders = event.oncall_orders
     route_meta_info_dict = event.route_meta_info_dict
     route_plan_dict = event.route_plan_dict
     carriers_in_stop: List[bool] = (running_env.snapshot_list["carriers"][tick::"in_stop"] == 1).tolist()
@@ -64,7 +67,7 @@ def get_greedy_metrics(env):
 # Greedy: assign each on-call order to the closest stop on existing route.
 if __name__ == "__main__":
     env = Env(
-        scenario="oncall_routing", topology="example", start_tick=0, durations=1440,
+        scenario="oncall_routing", topology="example", start_tick=480, durations=960,
     )
     print(env.configs)
     env.reset(keep_seed=True)
@@ -72,5 +75,6 @@ if __name__ == "__main__":
     while not is_done:
         assert isinstance(decision_event, OncallRoutingPayload)
         print(f"Processing {len(decision_event.oncall_orders)} oncall orders at tick {env.tick}.")
-        metrics, decision_event, is_done = env.step(_get_actions(env, decision_event))
+        while decision_event and len(decision_event.oncall_orders) > 0:
+            metrics, decision_event, is_done = env.step(_get_actions(env, decision_event, oncall_order=decision_event.oncall_orders[0]))
     print(metrics)

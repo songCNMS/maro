@@ -213,7 +213,8 @@ class OncallRoutingBusinessEngine(AbsBusinessEngine):
         rtb_order = Order(
             order_id="dummy_rtb_order",
             coordinate=self._head_quarter_coord,
-            open_time=self._config.data_loader_config.start_tick,
+            # open_time=self._config.data_loader_config.start_tick,
+            open_time=self._config.data_loader_config.end_tick-200,
             close_time=self._config.data_loader_config.end_tick,
             is_delivery=None,
             status=OrderStatus.DUMMY

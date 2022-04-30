@@ -30,7 +30,8 @@ class OncallOrderGenerator(object):
     def get_oncall_orders(self, tick: int) -> List[Order]:
         orders = []
         while len(self._queue) > 0 and self._queue[0][0] < tick:
-            self._queue.popleft()
+            create_time, order = self._queue.popleft()
+            print("not processing: ", create_time, order, tick)
 
         while len(self._queue) > 0 and self._queue[0][0] == tick:
             _, order = self._queue.popleft()
@@ -53,7 +54,7 @@ class FromHistoryOncallOrderGenerator(OncallOrderGenerator):
                 is_delivery=False
             )
 
-            create_time = max(0, order.open_time - random[ONCALL_RAND_KEY].uniform(30, 120))
+            create_time = max(500, order.open_time - random[ONCALL_RAND_KEY].uniform(60, 240))
             buff.append((create_time, order))
 
         buff.sort(key=lambda x: x[0])
@@ -103,7 +104,9 @@ class SampleOncallOrderGenerator(OncallOrderGenerator):
         open_times = random[ONCALL_RAND_KEY].choices(self._open_times[0], weights=self._open_times[1], k=n)
 
         windows = random[ONCALL_RAND_KEY].choices(self._time_windows[0], weights=self._time_windows[1], k=n)
-        windows = [max(10, w) for w in windows]
+        # windows = [max(100, w) for w in windows]
+        # TODO
+        windows = [min(self._end_tick-open_times[i]-10, w) for i, w in enumerate(windows)]
 
         close_times = [min(self._end_tick, open_times[i] + windows[i]) for i in range(n)]
 
@@ -116,7 +119,7 @@ class SampleOncallOrderGenerator(OncallOrderGenerator):
                 close_time=close_times[i],
                 is_delivery=False,
             )
-            create_time = max(0, order.open_time - int(random[ONCALL_RAND_KEY].uniform(30, 120)))
+            create_time = max(500, order.open_time - int(random[ONCALL_RAND_KEY].uniform(60, 240)))
             buff.append((create_time, order))
 
         buff.sort(key=lambda x: x[0])
