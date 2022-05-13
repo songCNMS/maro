@@ -21,7 +21,7 @@ from maro.simulator.scenarios.supply_chain.objects import SkuInfo, SkuMeta, Supp
 from maro.simulator.scenarios.supply_chain.parser import SupplyChainConfiguration
 
 import sys
-sys.path.append("/data/songlei/maro/")
+sys.path.append("/home/lesong/maro/")
 
 from examples.supply_chain.common.balance_calculator import BalanceSheetCalculator
 from .algorithms.rule_based import ConsumerMinMaxPolicy as ConsumerBaselinePolicy, ManufacturerBaselinePolicy
@@ -478,6 +478,7 @@ class SCEnvSampler(AbsEnvSampler):
         step_idx = 0
         self._env = self._test_env
         self._balance_calculator._env = self._env
+        self._balance_calculator._training_mode = False
         if policy_state is not None:
             self.set_policy_state(policy_state)
 
@@ -562,7 +563,7 @@ class SCEnvSampler(AbsEnvSampler):
         if eval_reward >= self._max_eval_reward:
             tracker.render(tracker.loc_path, 'a_plot_balance.png', tracker.step_balances, ["OuterRetailerFacility"])
             tracker.render(tracker.loc_path, 'a_plot_reward.png', tracker.step_rewards, ["OuterRetailerFacility"])
-            tracker.render_sku(tracker.loc_path)
+            # tracker.render_sku(tracker.loc_path)
             
             df_product = pd.DataFrame(self._balance_calculator.product_metric_track)
             df_product = df_product.groupby(['tick', 'id']).first().reset_index()
@@ -570,6 +571,7 @@ class SCEnvSampler(AbsEnvSampler):
             self._max_eval_reward = eval_reward
         print(self._max_eval_reward, self._eval_reward_list)
         mean_reward = {entity_id: val / step_idx for entity_id, val in mean_reward.items()}
+        self._balance_calculator._training_mode = True
         return {"info": [self._info], "mean_reward": mean_reward}
 
 

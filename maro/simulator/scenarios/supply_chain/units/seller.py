@@ -122,7 +122,7 @@ class SellerUnit(ExtendUnitBase):
         return float(np.median(self._demand_hist))
 
     def sale_std(self) -> float:
-        return float(np.std(self._sale_hist))
+        return float(np.std(self._demand_hist))
 
     def get_node_info(self) -> SellerUnitInfo:
         return SellerUnitInfo(

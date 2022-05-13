@@ -1,21 +1,22 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import sys
-sys.path.append("/data/songlei/maro/")
+sys.path.append("/home/lesong/maro/")
 from os.path import dirname, join, realpath
 
 from maro.rl.training import TrainingManager
 from maro.rl.workflows.scenario import Scenario
 from maro.utils import LoggerV2
+from examples.supply_chain.rl.config import num_products_to_sample
 
 # config variables
 SCENARIO_NAME = "supply_chain"
 SCENARIO_PATH = join(dirname(dirname(realpath(__file__))), SCENARIO_NAME, "rl")
 NUM_EPISODES = 1000
 NUM_STEPS = None
-CHECKPOINT_PATH = join(dirname(SCENARIO_PATH), "checkpoints")
+CHECKPOINT_PATH = join(dirname(SCENARIO_PATH), f"checkpoints_{num_products_to_sample}")
 CHECKPOINT_INTERVAL = 10
-EVAL_SCHEDULE = list(range(20, NUM_EPISODES+20, 20))
+EVAL_SCHEDULE = list(range(100, NUM_EPISODES+100, 100))
 
 
 import argparse

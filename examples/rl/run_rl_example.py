@@ -1,6 +1,6 @@
 import argparse
 import sys
-sys.path.append("/data/songlei/maro/")
+sys.path.append("/home/lesong/maro/")
 from maro.cli.local.commands import run
 
 

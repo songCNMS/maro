@@ -58,6 +58,7 @@ class BalanceSheetCalculator:
     def __init__(self, env: Env, team_reward) -> None:
         self._env: Env = env
         self._team_reward = team_reward
+        self._training_mode = True
 
         self._facility_info_dict: Dict[int, FacilityInfo] = self._env.summary["node_mapping"]["facilities"]
 
@@ -313,7 +314,7 @@ class BalanceSheetCalculator:
                 product_storage_index = int(np.where(self._get_list_attributes("storage", "product_list", tick)[storage_index] == product.sku_id)[0])
                 stock = int(self._get_list_attributes("storage", "product_quantity", tick)[storage_index][product_storage_index])
             unit_inventory_holding_cost = float(self._entity_dict[product.unit_id].skus.unit_storage_cost)
-            if (tick, i) not in self.tick_cached:
+            if (not self._training_mode) and (tick, i) not in self.tick_cached:
                 self.tick_cached.add((tick, i))
                 meta_sku = self.sku_meta_info[product.sku_id]
                 meta_facility = self.facility_info[product.facility_id]

@@ -1,6 +1,6 @@
 
 import sys
-sys.path.append("/data/songlei/maro/")
+sys.path.append("/home/lesong/maro/")
 
 from maro.simulator.scenarios.supply_chain.facilities import facility
 from maro.simulator.scenarios.supply_chain.units.product import ProductUnit
@@ -15,6 +15,7 @@ from pyecharts.charts import Line, Scatter, Bar, Timeline, Grid, Tab, Pie, Picto
 from pyecharts.globals import SymbolType
 from pyecharts.components import Table
 from datetime import datetime, timedelta
+from examples.supply_chain.rl.config import TRAIN_STEPS
 
 COLORS = ["Blue", "Orange", "Green", "CadetBlue", "SteelBlue", "SkyBlue",
           "RoyalBlue", "Aquamarine", "MediumTurquoise", "YellowGreen", "DarkGreen"]
@@ -74,7 +75,7 @@ class SimulationComparisionTrackerHtml:
         df2.loc[:, "model_name"] = self.model2
         df = pd.concat([df1, df2])
         df.loc[:, 'sale_dt'] = df['tick'].map(lambda x: self.start_dt+timedelta(days=x))
-        df = df[(df['sale_dt'] >= self.start_dt+timedelta(days=180))]
+        df = df[(df['sale_dt'] >= self.start_dt+timedelta(days=TRAIN_STEPS))]
         self.facility_name_list = [facility_name for facility_name in df['facility_name'].unique() if len(facility_name) > 2 and facility_name[:2] in ['CA', 'TX', 'WI']]
         # self.facility_name_list = df['facility_name'].unique().tolist()
         df = df[df['facility_name'].isin(self.facility_name_list)]
@@ -460,7 +461,7 @@ class SimulationTrackerHtml:
 
 class SimulationTracker:
     def __init__(self, episod_len, n_episods, env, exp_name, eval_period=None):
-        self.loc_path = f"/data/songlei/maro/examples/supply_chain/results/{exp_name}/"
+        self.loc_path = f"/home/lesong/maro/examples/supply_chain/results/{exp_name}/"
         os.makedirs(self.loc_path, exist_ok=True)
         self.episod_len = episod_len
         if eval_period:
@@ -651,15 +652,15 @@ class SimulationTracker:
         return metric, metric_list
 
 if __name__ == "__main__":
-    # html_render = SimulationTrackerHtml("/data/songlei/maro/examples/supply_chain/results/SCI_100SKUs_DIST_DQN/output_product_metrics.csv")
+    # html_render = SimulationTrackerHtml("/home/lesong/maro/examples/supply_chain/results/SCI_100SKUs_DIST_DQN/output_product_metrics.csv")
     # html_render.render_sku()
     # html_render.render_facility()
 
     baseline_model = "baseline"
-    baseline_loc = "/data/songlei/maro/examples/supply_chain/results/BASELINE_SCI_100SKUs_DIST_1.2/output_product_metrics.csv"
+    baseline_loc = "/home/lesong/maro/examples/supply_chain/results/EOQ_SCI_500SKUs_DIST_1.0/output_product_metrics.csv"
 
     RL_model = "MARL"
-    RL_loc = "/data/songlei/maro/examples/supply_chain/results/BASELINE_SCI_100SKUs_DIST_1.5/output_product_metrics.csv"
+    RL_loc = "/home/lesong/maro/examples/supply_chain/results/EOQ_SCI_500SKUs_DIST_1.4/output_product_metrics.csv"
 
     html_comparison_render = SimulationComparisionTrackerHtml(baseline_model, baseline_loc, RL_model, RL_loc)
     html_comparison_render.render_overview()

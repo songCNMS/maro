@@ -2,14 +2,16 @@
 # Licensed under the MIT license.
 import sys
 
-sys.path.append("/data/songlei/maro")
+sys.path.append("/home/lesong/maro")
 import os
 from os.path import dirname, join, realpath
 import pandas as pd
 
 from maro.rl.workflows.scenario import Scenario
+from maro.rl.training import TrainingManager
+from maro.utils import LoggerV2
+from examples.supply_chain.rl.config import num_products_to_sample
 
-# from examples.supply_chain.rl.policies import agent2baseline_policy
 
 # config variables
 SCENARIO_NAME = "supply_chain"
@@ -23,11 +25,35 @@ if __name__ == "__main__":
     parser.add_argument("--exp_name", default="Round1")
     args = parser.parse_args()
     scenario = Scenario(SCENARIO_PATH)
+
+    LOG_PATH = join(dirname(SCENARIO_PATH), "results", args.exp_name)
+    os.makedirs(LOG_PATH, exist_ok=True)
+    logger = LoggerV2("MAIN", dump_path=f"{LOG_PATH}/log.txt")
+
+    agent2policy = scenario.agent2policy
     policy_creator = scenario.policy_creator
     policy_dict = {name: get_policy_func(name) for name, get_policy_func in policy_creator.items()}
     policy_creator = {name: lambda name: policy_dict[name] for name in policy_dict}
+    trainer_creator = scenario.trainer_creator
 
     env_sampler = scenario.env_sampler_creator(policy_creator)
+
+    if scenario.trainable_policies is None:
+        trainable_policies = set(policy_creator.keys())
+    else:
+        trainable_policies = set(scenario.trainable_policies)
+
+    trainable_policy_creator = {name: func for name, func in policy_creator.items() if name in trainable_policies}
+    trainable_agent2policy = {id_: name for id_, name in agent2policy.items() if name in trainable_policies}
+    training_manager = TrainingManager(
+        trainable_policy_creator,
+        trainer_creator,
+        trainable_agent2policy,
+        device_mapping=scenario.device_mapping,
+        logger=logger
+    )
+
+    training_manager.load(f"/home/lesong/maro/examples/supply_chain/checkpoints_{num_products_to_sample}")
 
     result = env_sampler.eval()
     if scenario.post_evaluate:

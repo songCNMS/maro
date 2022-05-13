@@ -12,8 +12,8 @@ IDX_CONSUMER_ORDER_BASE_COST, IDX_CONSUMER_LATEST_CONSUMPTIONS = 0, 1
 
 
 
-vlt_buffer_days = 1.0
-num_products_to_sample = 500
+vlt_buffer_days = 1.3
+num_products_to_sample = 20
 
 ALGO="PPO"
 
@@ -62,8 +62,8 @@ test_env_conf = {
 
 workflow_settings: dict = {
     "consumption_hist_len": 4,
-    "sale_hist_len": 4,
-    "pending_order_len": 4,
+    "sale_hist_len": 14,
+    "pending_order_len": 7,
     "reward_normalization": 1.0,
     "or_policy_vlt_buffer_days": vlt_buffer_days,
     "default_vehicle_type": "train",

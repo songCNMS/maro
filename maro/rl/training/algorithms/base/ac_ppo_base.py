@@ -290,8 +290,8 @@ class DiscretePPOBasedOps(DiscreteACBasedOps):
 
         if self._clip_ratio is not None:
             self._policy_old.eval()
-            actions = ndarray_to_tensor(batch.actions, device=torch.device('cpu')).long()  # a
-            batch.old_logps = self._policy_old.get_state_action_logps(states.cpu(), actions).detach().cpu().numpy()
+            actions = ndarray_to_tensor(batch.actions, device=self._device).long()  # a
+            batch.old_logps = self._policy_old.get_state_action_logps(states, actions).detach().cpu().numpy()
             self._policy_old.train()
 
         return batch
