@@ -15,13 +15,14 @@ SCENARIO_PATH = join(dirname(dirname(realpath(__file__))), SCENARIO_NAME, "rl")
 NUM_EPISODES = 1000
 NUM_STEPS = None
 CHECKPOINT_PATH = join(dirname(SCENARIO_PATH), f"checkpoints_{num_products_to_sample}")
-CHECKPOINT_INTERVAL = 10
-EVAL_SCHEDULE = list(range(100, NUM_EPISODES+100, 100))
+CHECKPOINT_INTERVAL = 5
+EVAL_SCHEDULE = list(range(10, NUM_EPISODES+10, 10))
 
 
 import argparse
 import wandb
 import os
+import numpy as np
 os.environ["WANDB_API_KEY"] = "116a4f287fd4fbaa6f790a50d2dd7f97ceae4a03"
 wandb.login()
 import pandas as pd
@@ -67,7 +68,7 @@ if __name__ == "__main__":
         device_mapping=scenario.device_mapping,
         logger=logger
     )
-
+    eval_reward_list = []
     # main loopxs
     for ep in range(1, NUM_EPISODES + 1):
         collect_time = training_time = 0
@@ -93,6 +94,11 @@ if __name__ == "__main__":
             logger.info(f"Eval {ep} starting")
             eval_point_index += 1
             result = env_sampler.eval()
+            eval_reward_list.append(result['eval_reward'])
+            if result['eval_reward'] == np.max(eval_reward_list):
+                pth = join(CHECKPOINT_PATH, "best")
+                training_manager.save(pth)
+                logger.info(f"All trainer states saved under {pth}")
             # if scenario.post_evaluate:
             #     scenario.post_evaluate(result["info"], ep)
             # tracker = result['tracker']

@@ -572,7 +572,7 @@ class SCEnvSampler(AbsEnvSampler):
         print(self._max_eval_reward, self._eval_reward_list)
         mean_reward = {entity_id: val / step_idx for entity_id, val in mean_reward.items()}
         self._balance_calculator._training_mode = True
-        return {"info": [self._info], "mean_reward": mean_reward}
+        return {"info": [self._info], "mean_reward": mean_reward, "eval_reward": eval_reward}
 
 
 def env_sampler_creator(policy_creator) -> SCEnvSampler:

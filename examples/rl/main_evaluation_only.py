@@ -10,7 +10,7 @@ import pandas as pd
 from maro.rl.workflows.scenario import Scenario
 from maro.rl.training import TrainingManager
 from maro.utils import LoggerV2
-from examples.supply_chain.rl.config import num_products_to_sample
+from examples.supply_chain.rl.config import num_products_to_sample, ALGO
 
 
 # config variables
@@ -52,8 +52,8 @@ if __name__ == "__main__":
         device_mapping=scenario.device_mapping,
         logger=logger
     )
-
-    training_manager.load(f"/data/songlei/maro/checkpoint/rl_job/supply_chain/100")
+    if ALGO != "EOQ":
+        training_manager.load(f"/data/songlei/maro/checkpoint/rl_job/supply_chain/100")
 
     result = env_sampler.eval()
     if scenario.post_evaluate:

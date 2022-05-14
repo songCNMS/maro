@@ -19,8 +19,10 @@ ALGO="PPO"
 
 TEAM_REWARD = False
 SHARED_MODEL = False
+TRAIN_STEPS = 60
+EVAL_STEPS = 180
 
-EXP_NAME = f"{ALGO}_SCI_{num_products_to_sample}SKUs_DIST_{vlt_buffer_days}"
+EXP_NAME = f"{ALGO}_SCI_{num_products_to_sample}SKUs_T{TRAIN_STEPS}_E{EVAL_STEPS}_{vlt_buffer_days}"
 if TEAM_REWARD:
     EXP_NAME += '_TR'
 if SHARED_MODEL:
@@ -40,8 +42,7 @@ NUM_CONSUMER_ACTIONS = 3
 #     NUM_CONSUMER_ACTIONS = OR_NUM_CONSUMER_ACTIONS
 OR_MANUFACTURE_ACTIONS = 20
 
-TRAIN_STEPS = 60
-EVAL_STEPS = 180
+
 
 
 env_conf = {
