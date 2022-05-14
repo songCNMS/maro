@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 import sys
 
-sys.path.append("/home/lesong/maro")
+sys.path.append("/data/songlei/maro")
 import os
 from os.path import dirname, join, realpath
 import pandas as pd
@@ -53,7 +53,7 @@ if __name__ == "__main__":
         logger=logger
     )
 
-    training_manager.load(f"/home/lesong/maro/examples/supply_chain/checkpoints_{num_products_to_sample}")
+    training_manager.load(f"/data/songlei/maro/checkpoint/rl_job/supply_chain/100")
 
     result = env_sampler.eval()
     if scenario.post_evaluate:

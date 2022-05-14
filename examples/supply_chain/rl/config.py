@@ -12,8 +12,8 @@ IDX_CONSUMER_ORDER_BASE_COST, IDX_CONSUMER_LATEST_CONSUMPTIONS = 0, 1
 
 
 
-vlt_buffer_days = 1.3
-num_products_to_sample = 20
+vlt_buffer_days = 1.0
+num_products_to_sample = 500
 
 ALGO="PPO"
 
@@ -40,8 +40,8 @@ NUM_CONSUMER_ACTIONS = 3
 #     NUM_CONSUMER_ACTIONS = OR_NUM_CONSUMER_ACTIONS
 OR_MANUFACTURE_ACTIONS = 20
 
-TRAIN_STEPS = 180
-EVAL_STEPS = 60
+TRAIN_STEPS = 60
+EVAL_STEPS = 180
 
 
 env_conf = {

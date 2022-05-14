@@ -1,6 +1,6 @@
 
 import sys
-sys.path.append("/home/lesong/maro/")
+sys.path.append("/data/songlei/maro/")
 
 from maro.simulator.scenarios.supply_chain.facilities import facility
 from maro.simulator.scenarios.supply_chain.units.product import ProductUnit
@@ -461,7 +461,7 @@ class SimulationTrackerHtml:
 
 class SimulationTracker:
     def __init__(self, episod_len, n_episods, env, exp_name, eval_period=None):
-        self.loc_path = f"/home/lesong/maro/examples/supply_chain/results/{exp_name}/"
+        self.loc_path = f"/data/songlei/maro/examples/supply_chain/results/{exp_name}/"
         os.makedirs(self.loc_path, exist_ok=True)
         self.episod_len = episod_len
         if eval_period:
@@ -652,15 +652,15 @@ class SimulationTracker:
         return metric, metric_list
 
 if __name__ == "__main__":
-    # html_render = SimulationTrackerHtml("/home/lesong/maro/examples/supply_chain/results/SCI_100SKUs_DIST_DQN/output_product_metrics.csv")
+    # html_render = SimulationTrackerHtml("/data/songlei/maro/examples/supply_chain/results/SCI_100SKUs_DIST_DQN/output_product_metrics.csv")
     # html_render.render_sku()
     # html_render.render_facility()
 
     baseline_model = "baseline"
-    baseline_loc = "/home/lesong/maro/examples/supply_chain/results/EOQ_SCI_500SKUs_DIST_1.0/output_product_metrics.csv"
+    baseline_loc = "/data/songlei/maro/examples/supply_chain/results/EOQ_SCI_500SKUs_DIST_1.0/output_product_metrics.csv"
 
     RL_model = "MARL"
-    RL_loc = "/home/lesong/maro/examples/supply_chain/results/EOQ_SCI_500SKUs_DIST_1.4/output_product_metrics.csv"
+    RL_loc = "/data/songlei/maro/examples/supply_chain/results/EOQ_SCI_500SKUs_DIST_1.4/output_product_metrics.csv"
 
     html_comparison_render = SimulationComparisionTrackerHtml(baseline_model, baseline_loc, RL_model, RL_loc)
     html_comparison_render.render_overview()

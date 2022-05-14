@@ -21,7 +21,7 @@ from maro.simulator.scenarios.supply_chain.objects import SkuInfo, SkuMeta, Supp
 from maro.simulator.scenarios.supply_chain.parser import SupplyChainConfiguration
 
 import sys
-sys.path.append("/home/lesong/maro/")
+sys.path.append("/data/songlei/maro/")
 
 from examples.supply_chain.common.balance_calculator import BalanceSheetCalculator
 from .algorithms.rule_based import ConsumerMinMaxPolicy as ConsumerBaselinePolicy, ManufacturerBaselinePolicy
@@ -478,7 +478,7 @@ class SCEnvSampler(AbsEnvSampler):
         step_idx = 0
         self._env = self._test_env
         self._balance_calculator._env = self._env
-        self._balance_calculator._training_mode = False
+        self._balance_calculator._training_mode = True
         if policy_state is not None:
             self.set_policy_state(policy_state)
 
