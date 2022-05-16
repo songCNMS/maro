@@ -6,7 +6,7 @@ import scipy.stats as st
 from typing import Callable, Dict, List
 
 from maro.simulator.scenarios.supply_chain import ConsumerUnit, ProductUnit
-from maro.simulator.scenarios.supply_chain.facilities import FacilityBase, FacilityInfo
+from maro.simulator.scenarios.supply_chain.facilities import FacilityInfo
 from maro.simulator.scenarios.supply_chain.objects import SupplyChainEntity
 
 from .config import (
@@ -53,7 +53,7 @@ def serialize_state(state: dict) -> np.ndarray:
             if not isinstance(vals, list):
                 vals = [vals]
             if norm is not None:
-                vals = [max(0.0, min(20.0, x / (state[norm] + 0.01))) for x in vals]
+                vals = [max(0.0, min(10.0, x / (state[norm] + 0.01))) for x in vals]
             result.extend(vals)
 
     return np.asarray(result, dtype=np.float32)
@@ -365,7 +365,7 @@ class ScRlAgentStates:
 
         # state['consumer_in_transit_orders'] = facility_in_transit_orders[entity.facility_id]
 
-        # entity.skus.id -> SkuInfo.id -> unit.product_id
+        # entity.skus.id -> SkuInfo.id -> unit.sku_id
         state['inventory_in_stock'] = storage_product_quantity[entity.facility_id][
             self._global_sku_id2idx[entity.skus.id]
         ]

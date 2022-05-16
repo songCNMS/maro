@@ -499,6 +499,7 @@ class AbsEnvSampler(object, metaclass=ABCMeta):
             self._state, self._agent_state_dict = (None, {}) if is_done \
                 else self._get_global_and_agent_state(self._event)
 
+        # TODO: Check could we calculate the reward immediately after each step()
         tick_bound = self._env.tick - self._reward_eval_delay
         while len(self._trans_cache) > 0 and self._trans_cache[0].tick <= tick_bound:
             cache_element = self._trans_cache.popleft()

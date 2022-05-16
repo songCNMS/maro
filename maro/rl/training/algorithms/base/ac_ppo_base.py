@@ -146,8 +146,8 @@ class DiscreteACBasedOps(AbsTrainOps):
             actor_loss = -(torch.min(ratio * advantages, clipped_ratio * advantages))
         else:
             actor_loss = -(logps * advantages)  # I * delta * log pi(a|s)
-        loss = (actor_loss - 0.2*dist_entropy).mean()
-        print('actor_loss: ', actor_loss.mean(), 'entropy loss: ', dist_entropy.mean())
+        loss = (actor_loss - 0.2 * dist_entropy).mean()
+        # print('actor_loss: ', actor_loss.mean(), 'entropy loss: ', dist_entropy.mean())
         return loss
 
     @remote
@@ -332,7 +332,7 @@ class DiscretePPOBasedOps(DiscreteACBasedOps):
         advantages = ndarray_to_tensor(batch.advantages, self._device) # adv
 
         if self._clip_ratio is not None:
-            logps_old = ndarray_to_tensor(batch.old_logps, self._device) 
+            logps_old = ndarray_to_tensor(batch.old_logps, self._device)
         else:
             logps_old = None
 
@@ -348,7 +348,7 @@ class DiscretePPOBasedOps(DiscreteACBasedOps):
             actor_loss = -(torch.min(ratio * advantages, clipped_ratio * advantages)).float()
         else:
             actor_loss = -(logps * advantages).float() # I * delta * log pi(a|s)
-        loss = (actor_loss - 0.2*dist_entropy).mean()
+        loss = (actor_loss - 0.2 * dist_entropy).mean()
         # print('actor_loss: ', actor_loss.mean(), 'entropy loss: ', dist_entropy.mean())
         return loss
 

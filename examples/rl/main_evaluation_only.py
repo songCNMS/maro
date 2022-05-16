@@ -53,7 +53,7 @@ if __name__ == "__main__":
         logger=logger
     )
     if ALGO != "EOQ":
-        training_manager.load(f"/data/songlei/maro/checkpoint/rl_job/supply_chain/100")
+        training_manager.load(f"/data/songlei/maro/examples/supply_chain/checkpoints_500/best")
 
     result = env_sampler.eval()
     if scenario.post_evaluate:

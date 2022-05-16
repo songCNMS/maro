@@ -2,32 +2,27 @@
 # Licensed under the MIT license.
 
 from functools import partial
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+
+import torch
 
 from maro.simulator import Env
 from maro.simulator.scenarios.supply_chain import ConsumerUnit, ManufactureUnit
 from maro.simulator.scenarios.supply_chain.business_engine import SupplyChainBusinessEngine
 from maro.simulator.scenarios.supply_chain.facilities import FacilityInfo
 from maro.simulator.scenarios.supply_chain.objects import SupplyChainEntity
-from maro.simulator.scenarios.supply_chain.units.product import ProductUnit
-from maro.simulator.scenarios.supply_chain.units.seller import SellerUnit
 
 from .algorithms.ppo import get_policy as get_ppo_policy
 from .algorithms.ppo import get_ppo
 from .algorithms.dqn import get_policy as get_dqn_policy
 from .algorithms.dqn import get_dqn
 
-
+from .algorithms.rule_based import ManufacturerSSPolicy, ConsumerMinMaxPolicy
+from .config import env_conf, ALGO, NUM_CONSUMER_ACTIONS, SHARED_MODEL
 from .rl_agent_state import STATE_DIM
-from .algorithms.rule_based import DummyPolicy, ManufacturerSSPolicy, ConsumerMinMaxPolicy
-from .config import NUM_CONSUMER_ACTIONS, env_conf, ALGO, SHARED_MODEL
-
-import torch
-
-gpu_available = torch.cuda.is_available()
-gpu_cnts = torch.cuda.device_count()
 
 
+IS_BASELINE = (ALGO == "EOQ")
 
 # Create an env to get entity list and env summary
 env = Env(**env_conf)
@@ -42,80 +37,78 @@ entity_dict: Dict[Any, SupplyChainEntity] = {
     for entity in helper_business_engine.get_entity_list()
 }
 
-
-get_policy = (get_dqn_policy if ALGO == "DQN" else get_ppo_policy)
-
-
-def entity2policy(entity: SupplyChainEntity, baseline) -> str:
-    if entity.skus is None:
-        return "facility_policy"
-    elif issubclass(entity.class_type, ProductUnit):
-        return "product_policy"
-    elif issubclass(entity.class_type, ManufactureUnit):
+# Define the rule of policy mapping
+def entity2policy(entity: SupplyChainEntity) -> str:
+    if issubclass(entity.class_type, ManufactureUnit):
         return "manufacturer_policy"
-    elif issubclass(entity.class_type, SellerUnit):
-        return "seller_policy"
+
     elif issubclass(entity.class_type, ConsumerUnit):
         facility_name = facility_info_dict[entity.facility_id].name
-        if baseline:
-            return "consumer_eoq_policy"
-        if facility_name.startswith("CA_") or facility_name.startswith("TX_") or facility_name.startswith("WI_"):
-            return ("consumer.policy" if SHARED_MODEL else f"consumer_{facility_name[:2]}.policy")
-        else:
-            return "consumer_eoq_policy"
-    else:
-        raise TypeError(f"Unrecognized entity class type: {entity.class_type}")
+        if not IS_BASELINE and any([
+            facility_name.startswith("CA_"),
+            facility_name.startswith("TX_"),
+            facility_name.startswith("WI_"),
+        ]):
+            if SHARED_MODEL:
+                return "consumer.policy"
+            else:
+                return f"consumer_{facility_name[:2]}.policy"
 
-policy_creator = {
-    "consumer_eoq_policy": lambda name: ConsumerMinMaxPolicy(name),
-    "manufacturer_policy": lambda name: ManufacturerSSPolicy(name),
-    "facility_policy": lambda name: DummyPolicy(name),
-    "product_policy": lambda name: DummyPolicy(name),
-    "seller_policy": lambda name: DummyPolicy(name),
+        else:
+            return "consumer_baseline_policy"
+
+    return None
+
+agent2policy = {
+    id_: entity2policy(entity)
+    for id_, entity in entity_dict.items()
+    if entity2policy(entity)
 }
 
+get_policy = (get_dqn_policy if ALGO == "DQN" else get_ppo_policy)
+policy_creator = {
+    "consumer_baseline_policy": lambda name: ConsumerMinMaxPolicy(name),
+    "manufacturer_policy": lambda name: ManufacturerSSPolicy(name),
+    "consumer.policy": partial(get_policy, STATE_DIM, NUM_CONSUMER_ACTIONS),
+    "consumer_CA.policy": partial(get_policy, STATE_DIM, NUM_CONSUMER_ACTIONS),
+    "consumer_TX.policy": partial(get_policy, STATE_DIM, NUM_CONSUMER_ACTIONS),
+    "consumer_WI.policy": partial(get_policy, STATE_DIM, NUM_CONSUMER_ACTIONS),
+}
 
+# Define basic device mapping
+cuda_mapping = {
+    "CA": "cpu",
+    "TX": "cpu",
+    "WI": "cpu",
+    "shared": "cpu",
+}
+if torch.cuda.is_available():
+    gpu_cnts = torch.cuda.device_count()
+    cuda_mapping = {
+        "CA": f"cuda:{0 % gpu_cnts}",
+        "TX": f"cuda:{1 % gpu_cnts}",
+        "WI": f"cuda:{2 % gpu_cnts}",
+        "shared": "cuda:0",
+    }
 
-cuda_mapping = {"CA": "cpu", "TX": "cpu", "WI": "cpu"}
-if gpu_available:
-    cuda_mapping = {"CA": f"cuda:{0%gpu_cnts}", "TX": f"cuda:{1%gpu_cnts}", "WI": f"cuda:{2%gpu_cnts}"}
-if not SHARED_MODEL:
-    trainer_creator = {}
-    trainable_policies = []
-    device_mapping = {}
-    for entity_id, entity in entity_dict.items():
-        if issubclass(entity.class_type, ConsumerUnit):
-            facility_name = facility_info_dict[entity.facility_id].name
-            if facility_name.startswith("CA_") or facility_name.startswith("TX_") or facility_name.startswith("WI_"):
-                policy_key = f"consumer_{facility_name[:2]}.policy"
-                if policy_key not in policy_creator.keys():
-                    trainable_policies.append(policy_key)
-                    device_mapping[policy_key] = cuda_mapping[facility_name[:2]]
-                    policy_creator[policy_key] = partial(get_policy, STATE_DIM, NUM_CONSUMER_ACTIONS)
-                trainer_key = f"consumer_{facility_name[:2]}"
-                if trainer_key not in trainer_creator.keys():
-                    trainer_creator[trainer_key] = (get_dqn if ALGO=="DQN" else partial(get_ppo, STATE_DIM))
-else:
+get_trainer = (get_dqn if ALGO=="DQN" else partial(get_ppo, STATE_DIM))
+if SHARED_MODEL:
     trainable_policies = ["consumer.policy"]
-    device_mapping = {"consumer.policy": ("cuda:0" if gpu_available else "cpu")}
-    policy_creator["consumer.policy"] =  partial(get_policy, STATE_DIM, NUM_CONSUMER_ACTIONS)
-    if ALGO == "PPO":
-        trainer_creator = {
-            "consumer": partial(get_ppo, STATE_DIM),
-        }
-    else:
-        trainer_creator = {
-            "consumer": get_dqn,
-        }
-
-
-if ALGO != "EOQ":
-    agent2policy = {
-        id_: entity2policy(entity, False) for id_, entity in entity_dict.items()
-    }
+    trainer_creator = {"consumer": get_trainer}
+    device_mapping = {"consumer.policy": cuda_mapping["shared"]}
 else:
-    # baseline policies
-    agent2policy = {
-        id_: entity2policy(entity, True) for id_, entity in entity_dict.items()
+    trainable_policies = [
+        "consumer_CA.policy",
+        "consumer_TX.policy",
+        "consumer_WI.policy",
+    ]
+    trainer_creator = {
+        "consumer_CA": get_trainer,
+        "consumer_TX": get_trainer,
+        "consumer_WI": get_trainer,
     }
-
+    device_mapping = {
+        "consumer_CA.policy": cuda_mapping["CA"],
+        "consumer_TX.policy": cuda_mapping["TX"],
+        "consumer_WI.policy": cuda_mapping["WI"],
+    }
