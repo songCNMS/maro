@@ -34,7 +34,7 @@ EVAL_STEPS = 120
 
 assert ALGO in ["DQN", "EOQ", "PPO"], "wrong ALGO"
 OR_NUM_CONSUMER_ACTIONS = 20
-NUM_CONSUMER_ACTIONS = 3
+NUM_CONSUMER_ACTIONS = 4
 # if ALGO == "PPO":
 #     NUM_CONSUMER_ACTIONS = 3
 # else:
@@ -42,9 +42,9 @@ NUM_CONSUMER_ACTIONS = 3
 OR_MANUFACTURE_ACTIONS = 20
 
 TOPOLOGY = f"SCI_{num_products_to_sample}"
-PLOT_RENDER = True
+PLOT_RENDER = False
 DUMP_PRODUCT_METRICS = True
-LOG_CONSUMER_ACTIONS = True
+LOG_CONSUMER_ACTIONS = False
 
 
 env_conf = {
@@ -79,7 +79,7 @@ workflow_settings: dict = {
 }
 
 EXP_NAME = (
-    f"{TOPOLOGY}_{test_env_conf['durations']}_{ALGO}_"
+    f"{TOPOLOGY}_{env_conf['durations']}_{test_env_conf['durations']}_{ALGO}_"
     f"{workflow_settings['vehicle_selection_method']}"
 )
 

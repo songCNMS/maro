@@ -697,11 +697,10 @@ class SCEnvSampler(AbsEnvSampler):
 
         if self._eval_reward > self._max_eval_reward:
             self._max_eval_reward = self._eval_reward
-
+            self._logger.info("Start render...")
+            self._tracker.render('a_plot_balance.png', self._tracker.step_balances, ["OuterRetailerFacility"])
+            self._tracker.render('a_plot_reward.png', self._tracker.step_rewards, ["OuterRetailerFacility"])
             if workflow_settings["plot_render"]:
-                self._logger.info("Start render...")
-                self._tracker.render('a_plot_balance.png', self._tracker.step_balances, ["OuterRetailerFacility"])
-                self._tracker.render('a_plot_reward.png', self._tracker.step_rewards, ["OuterRetailerFacility"])
                 self._tracker.render_sku()
 
             if workflow_settings["dump_product_metrics"]:
@@ -755,7 +754,7 @@ class SCEnvSampler(AbsEnvSampler):
             self._post_eval_step(cache_element=exp_element, reward=reward)
 
         self._post_eval()
-        return {"info": [self._info], "mean_reward": self._mean_reward}
+        return {"info": [self._info], "mean_reward": self._mean_reward, 'eval_reward': self._eval_reward}
 
 
 def env_sampler_creator(policy_creator) -> SCEnvSampler:
