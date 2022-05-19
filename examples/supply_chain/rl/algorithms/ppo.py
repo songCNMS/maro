@@ -8,9 +8,7 @@ from torch.optim import Adam
 
 from maro.rl.model import DiscretePolicyNet, FullyConnected, VNet
 from maro.rl.policy import DiscretePolicyGradient
-from maro.rl.training.algorithms import DiscretePPOParams, DiscretePPOTrainer, DiscreteActorCriticTrainer, DiscreteActorCriticParams
-from examples.supply_chain.rl.config import TRAIN_STEPS
-
+from maro.rl.training.algorithms import PPOParams, DiscretePPOWithEntropyTrainer
 
 actor_net_conf = {
     "hidden_dims": [256, 256, 128],
@@ -113,37 +111,21 @@ class MyCriticNet(VNet):
         self.unfreeze_all_parameters()
 
 
-def get_policy(state_dim: int, action_num: int, name: str) -> DiscretePolicyGradient:
-    policy = DiscretePolicyGradient(name=name, policy_net=MyActorNet(state_dim, action_num))
-    return policy
+def get_ppo_policy(state_dim: int, action_num: int, name: str) -> DiscretePolicyGradient:
+    return DiscretePolicyGradient(name=name, policy_net=MyActorNet(state_dim, action_num))
 
 
-# def get_ppo(state_dim: int, name: str) -> DiscreteActorCriticTrainer:
-#     return DiscreteActorCriticTrainer(
-#         name=name,
-#         params=DiscreteActorCriticParams(
-#             get_v_critic_net_func=lambda: MyCriticNet(state_dim),
-#             reward_discount=.99,
-#             grad_iters=20,
-#             critic_loss_cls=torch.nn.SmoothL1Loss,
-#             min_logp=-4.0,
-#             lam=0.99,
-#             replay_memory_capacity=180
-#         ),
-#     )
-
-
-def get_ppo(state_dim: int, name: str) -> DiscretePPOTrainer:
-    return DiscretePPOTrainer(
+def get_ppo(state_dim: int, name: str) -> DiscretePPOWithEntropyTrainer:
+    return DiscretePPOWithEntropyTrainer(
         name=name,
-        params=DiscretePPOParams(
+        params=PPOParams(
             get_v_critic_net_func=lambda: MyCriticNet(state_dim),
             reward_discount=.99,
-            grad_iters=512,
+            grad_iters=256,
             critic_loss_cls=torch.nn.SmoothL1Loss,
             min_logp=-4.0,
             lam=0.99,
             clip_ratio=0.2,
-            replay_memory_capacity=TRAIN_STEPS
+            replay_memory_capacity=540
         ),
     )

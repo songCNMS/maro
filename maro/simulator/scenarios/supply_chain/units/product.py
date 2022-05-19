@@ -135,28 +135,59 @@ class ProductUnit(ExtendUnitBase):
 
     def _get_sale_means(self) -> List[float]:
         sale_means = []
-        _cache: Dict[int, float] = {}
+        _cache_sale: Dict[int, float] = {}
 
         def _get_sale_mean(product_unit: ProductUnit) -> float:
-            if product_unit.id not in _cache:
-                _cache[product_unit.id] = product_unit.get_sale_mean()
-            return _cache[product_unit.id]
+            if product_unit.id not in _cache_sale:
+                _cache_sale[product_unit.id] = product_unit.get_sale_mean()
+            return _cache_sale[product_unit.id]
 
         for downstream_facility in self.facility.downstream_facility_list[self.sku_id]:
-            sale_means.append(_get_sale_mean(downstream_facility.products[self.sku_id]))
+            _sale = _get_sale_mean(downstream_facility.products[self.sku_id])
+            sale_means.append(_sale)
+
         for out_sku_id, consumption_ratio in self.bom_out_info_list:
-            sale_means.append(int(_get_sale_mean(self.facility.products[out_sku_id]) * consumption_ratio))
+            _sale = _get_sale_mean(self.facility.products[out_sku_id])
+            sale_means.append(int(_sale) * consumption_ratio)
 
         return sale_means
+
+    def _get_demand_means(self) -> List[float]:
+        demand_means = []
+        _cache_demand: Dict[int, float] = {}
+
+        def _get_demand_mean(product_unit: ProductUnit) -> float:
+            if product_unit.id not in _cache_demand:
+                _cache_demand[product_unit.id] = product_unit.get_demand_mean()
+            return _cache_demand[product_unit.id]
+
+        for downstream_facility in self.facility.downstream_facility_list[self.sku_id]:
+            _demand = _get_demand_mean(downstream_facility.products[self.sku_id])
+            demand_means.append(_demand)
+
+        for out_sku_id, consumption_ratio in self.bom_out_info_list:
+            _demand = _get_demand_mean(self.facility.products[out_sku_id])
+            demand_means.append(int(_demand) * consumption_ratio)
+
+        return demand_means
 
     def get_sale_mean(self) -> float:
         """"Here the sale mean of upstreams means the sum of its downstreams,
         which indicates the daily demand of this product from the aspect of the facility it belongs."""
-        return float(np.sum(self._get_sale_means()))
+        sale_means = self._get_sale_means()
+        return float(np.sum(sale_means))
+
+    def get_demand_mean(self) -> float:
+        demand_means = self._get_demand_means()
+        return float(np.sum(demand_means))
 
     def get_sale_std(self) -> float:
         sale_means = self._get_sale_means()
         return 0.0 if len(sale_means) == 0 else float(np.std(sale_means))
+
+    def get_demand_std(self) -> float:
+        demand_means = self._get_demand_means()
+        return 0.0 if len(demand_means) == 0 else float(np.std(demand_means))
 
     def get_max_sale_price(self) -> float:
         price = 0.0
@@ -177,10 +208,17 @@ class StoreProductUnit(ProductUnit):
         )
 
     def get_sale_mean(self) -> float:
-        return self.seller.sale_mean()
+        # NOTE: super().get_sale_mean() only works for DAG-topology.
+        # NOTE: Here use sale_median() instead of sale_mean() to weaken the influence of outlier.
+        return super().get_sale_mean() + self.seller.sale_median()
 
     def get_sale_std(self) -> float:
         return self.seller.sale_std()
+
+    def get_demand_mean(self) -> float:
+        # NOTE: super().get_demand_mean() only works for DAG-topology.
+        # NOTE: Here use demand_median() instead of demand_mean() to weaken the influence of outlier.
+        return super().get_sale_mean() + self.seller.demand_median()
 
     def get_max_sale_price(self) -> float:
         return self.facility.skus[self.sku_id].price

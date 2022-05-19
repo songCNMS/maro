@@ -6,14 +6,15 @@ from typing import Dict
 import numpy as np
 
 import torch
-from torch.optim import RMSprop, Adam
+# import numpy as np
+from torch.optim import Adam
 
 from maro.rl.exploration import LinearExplorationScheduler, epsilon_greedy
 from examples.supply_chain.rl.exploration import or_epsilon_greedy
 from maro.rl.model import DiscreteQNet, FullyConnected
 from maro.rl.policy import ValueBasedPolicy
 from maro.rl.training.algorithms import DQNParams, DQNTrainer
-from maro.rl.utils import ndarray_to_tensor
+# from maro.rl.utils import ndarray_to_tensor
 
 
 q_net_conf = {
@@ -70,26 +71,6 @@ class MyQNet(DiscreteQNet):
 
 import sys
 
-class ORValueBasedPolicy(ValueBasedPolicy):
-    def _get_actions_impl(self, states: torch.Tensor, exploring: bool) -> torch.Tensor:
-        self._call_cnt += 1
-        if self._call_cnt <= self._warmup:
-            return ndarray_to_tensor(np.random.randint(self.action_num, size=(states.shape[0], 1)), self._device)
-
-        q_matrix = self.q_values_for_all_actions_tensor(states)  # [B, action_num]
-        _, actions = q_matrix.max(dim=1)  # [B], [B]
-        if self._exploring:
-            or_actions = states[:, -1]
-            actions = self._exploration_func(states, actions.cpu().numpy(), self.action_num, or_actions.cpu().numpy(), **self._exploration_params)
-            actions = ndarray_to_tensor(actions, self._device)
-        return actions.unsqueeze(1)  # [B, 1]
-
-    def explore(self) -> None:
-        self._exploring = True
-    
-    def exploit(self) -> None:
-        self._exploring = False
-
 
 # def get_policy(state_dim: int, action_num: int, name: str) -> ValueBasedPolicy:
 #     policy = ORValueBasedPolicy(
@@ -130,7 +111,30 @@ class ORValueBasedPolicy(ValueBasedPolicy):
 #         self._exploring = False
 
 
-def get_policy(state_dim: int, action_num: int, name: str) -> ValueBasedPolicy:
+# class ORValueBasedPolicy(ValueBasedPolicy):
+#     def _get_actions_impl(self, states: torch.Tensor, exploring: bool) -> torch.Tensor:
+#         self._call_cnt += 1
+#         if self._call_cnt <= self._warmup:
+#             return ndarray_to_tensor(np.random.randint(self.action_num, size=(states.shape[0], 1)), self._device)
+
+#         q_matrix = self.q_values_for_all_actions_tensor(states)  # [B, action_num]
+#         _, actions = q_matrix.max(dim=1)  # [B], [B]
+#         if self._exploring:
+#             or_actions = states[:, -1]
+#             actions = self._exploration_func(
+#                 states, actions.cpu().numpy(), self.action_num, or_actions.cpu().numpy(), **self._exploration_params
+#             )
+#             actions = ndarray_to_tensor(actions, self._device)
+#         return actions.unsqueeze(1)  # [B, 1]
+
+#     def explore(self) -> None:
+#         self._exploring = True
+
+#     def exploit(self) -> None:
+#         self._exploring = False
+
+
+def get_dqn_policy(state_dim: int, action_num: int, name: str) -> ValueBasedPolicy:
     policy = ValueBasedPolicy(
         name=name,
         q_net=MyQNet(state_dim, action_num),

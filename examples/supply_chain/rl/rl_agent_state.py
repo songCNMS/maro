@@ -3,11 +3,11 @@
 
 import numpy as np
 import scipy.stats as st
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 
 from maro.simulator.scenarios.supply_chain import ConsumerUnit, ProductUnit
 from maro.simulator.scenarios.supply_chain.facilities import FacilityInfo
-from maro.simulator.scenarios.supply_chain.objects import SupplyChainEntity
+from maro.simulator.scenarios.supply_chain.objects import SupplyChainEntity, VendorLeadingTimeInfo
 
 from .config import (
     OR_NUM_CONSUMER_ACTIONS,
@@ -19,9 +19,10 @@ from .config import (
 
 keys_in_state = [
     (None, ['is_over_stock', 'is_out_of_stock', 'is_below_rop']),
-    ('sale_mean', [
-        'sale_std',
+    ('demand_mean', [
+        'demand_std',
         'demand_hist',
+        'pending_order',
         'inventory_in_stock',
         'inventory_in_transit',
         'inventory_estimated',
@@ -89,19 +90,24 @@ class ScRlAgentStates:
     def _init_atom() -> Dict[str, Callable]:
         atom = {
             'stock_constraint': (
-                lambda f_state: 0 < f_state['inventory_in_stock'] <= (f_state['max_vlt'] + 7) * f_state['sale_mean']
+                lambda f_state: 0 < f_state['inventory_in_stock'] <= (f_state['max_vlt'] + 7) * f_state['demand_mean']
             ),
             'is_replenish_constraint': lambda f_state: f_state['consumption_hist'][-1] > 0,
-            'low_profit': lambda f_state: (f_state['sku_price'] - f_state['sku_cost']) * f_state['sale_mean'] <= 1000,
+            'low_profit': lambda f_state: (f_state['sku_price'] - f_state['sku_cost']) * f_state['demand_mean'] <= 1000,
             'low_stock_constraint': (
-                lambda f_state: 0 < f_state['inventory_in_stock'] <= (f_state['max_vlt'] + 3) * f_state['sale_mean']
+                lambda f_state: 0 < f_state['inventory_in_stock'] <= (f_state['max_vlt'] + 3) * f_state['demand_mean']
             ),
             'out_of_stock': lambda f_state: 0 < f_state['inventory_in_stock'],
         }
 
         return atom
 
-    def _init_entity_state(self, entity: SupplyChainEntity) -> dict:
+    def _init_entity_state(
+        self,
+        entity: SupplyChainEntity,
+        chosen_vlt_info: Optional[VendorLeadingTimeInfo],
+        fixed_vlt: bool,
+    ) -> dict:
         state: dict = {}
         facility_info: FacilityInfo = self._facility_info_dict[entity.facility_id]
 
@@ -109,7 +115,7 @@ class ScRlAgentStates:
         self._init_facility_feature(state, entity, facility_info)
         self._init_storage_feature(state, facility_info)
         self._init_bom_feature(state, entity)
-        self._init_vlt_feature(state, entity, facility_info)
+        self._init_vlt_feature(state, entity, facility_info, chosen_vlt_info, fixed_vlt)
         self._init_sale_feature(state, entity, facility_info)
         self._init_distribution_feature(state)
         self._init_consumer_feature(state, entity, facility_info)
@@ -129,7 +135,9 @@ class ScRlAgentStates:
         accumulated_balance: float,
         storage_product_quantity: Dict[int, List[int]],
         facility_product_utilization: Dict[int, int],
-        facility_in_transit_orders: Dict[int, List[int]],
+        facility_in_transit_quantity: Dict[int, List[int]],
+        chosen_vlt_info: Optional[VendorLeadingTimeInfo],
+        fixed_vlt: bool,
     ) -> dict:
         """Update the state dict of the given entity_id in the given tick.
 
@@ -149,7 +157,7 @@ class ScRlAgentStates:
                 indexed by the global_sku_id2idx.
             facility_product_utilization (Dict[int, int]): The current total product quantity in corresponding facility.
                 The key is the id of the facility the entity belongs to, the value is the total product quantity.
-            facility_in_transit_orders (Dict[int, List[int]]): The current in-transition product quantity. The key is
+            facility_in_transit_quantity (Dict[int, List[int]]): The current in-transition product quantity. The key is
                 the id of the facility the entity belongs to, the value is the in-transition product quantity list which
                 is indexed by the global_sku_id2idx.
 
@@ -159,15 +167,18 @@ class ScRlAgentStates:
         entity: SupplyChainEntity = self._entity_dict[entity_id]
 
         if entity_id not in self._templates:
-            self._templates[entity_id] = self._init_entity_state(entity)
+            self._templates[entity_id] = self._init_entity_state(entity, chosen_vlt_info, fixed_vlt)
         state: dict = self._templates[entity_id]
 
         self._update_global_features(state, tick)
         self._update_facility_features(state, accumulated_balance)
         self._update_storage_features(state, entity, storage_product_quantity, facility_product_utilization)
+        self._update_vlt_features(state, chosen_vlt_info)
         self._update_sale_features(state, entity, cur_metrics, cur_seller_hist_states, cur_consumer_hist_states)
         self._update_distribution_features(state, entity, cur_distribution_states)
-        self._update_consumer_features(state, entity, cur_metrics, storage_product_quantity, facility_in_transit_orders)
+        self._update_consumer_features(
+            state, entity, cur_metrics, storage_product_quantity, facility_in_transit_quantity
+        )
 
         return state
 
@@ -219,20 +230,26 @@ class ScRlAgentStates:
         #     state['bom_outputs'][self._global_sku_id2idx[entity.skus.id]] = 1
         return
 
-    def _init_vlt_feature(self, state: dict, entity: SupplyChainEntity, facility_info: FacilityInfo) -> None:
-        state['max_vlt'] = 0
+    def _init_vlt_feature(
+        self,
+        state: dict,
+        entity: SupplyChainEntity,
+        facility_info: FacilityInfo,
+        chosen_vlt_info: Optional[VendorLeadingTimeInfo],
+        fixed_vlt: bool,
+    ) -> None:
+        max_vlt = facility_info.products_info[entity.skus.id].max_vlt
+        if fixed_vlt and chosen_vlt_info is not None:
+            max_vlt = chosen_vlt_info.vlt
 
-        if entity.skus is not None:
-            product_info = facility_info.products_info[entity.skus.id]
-
-            if product_info.consumer_info is not None:
-                state['max_vlt'] = product_info.max_vlt
+        state['max_vlt'] = max_vlt
+        state['cur_vlt'] = chosen_vlt_info.vlt if chosen_vlt_info else 0
 
         return
 
     def _init_sale_feature(self, state: dict, entity: SupplyChainEntity, facility_info: FacilityInfo) -> None:
-        state['sale_mean'] = 1.0
-        state['sale_std'] = 1.0
+        state['demand_mean'] = 1.0
+        state['demand_std'] = 1.0
         # state['sale_gamma'] = 1.0
         # state['total_backlog_demand'] = 0
         state['sale_hist'] = [0] * self._settings['sale_hist_len']
@@ -312,6 +329,9 @@ class ScRlAgentStates:
             state['distributor_in_transit_orders'] = dist_states[IDX_DISTRIBUTION_PENDING_ORDER_NUMBER]
         return
 
+    def _update_vlt_features(self, state: dict, chosen_vlt_info: VendorLeadingTimeInfo) -> None:
+        state['cur_vlt'] = chosen_vlt_info.vlt if chosen_vlt_info else 0
+
     def _update_sale_features(
         self,
         state: dict,
@@ -326,8 +346,8 @@ class ScRlAgentStates:
         # Get product unit id for current agent.
         product_unit_id = entity.id if issubclass(entity.class_type, ProductUnit) else entity.parent_id
 
-        state['sale_mean'] = cur_metrics["products"][product_unit_id]["sale_mean"]
-        state['sale_std'] = cur_metrics["products"][product_unit_id]["sale_std"]
+        state['demand_mean'] = cur_metrics["products"][product_unit_id]["demand_mean"]
+        state['demand_std'] = cur_metrics["products"][product_unit_id]["demand_std"]
 
         product_info = self._facility_info_dict[entity.facility_id].products_info[entity.skus.id]
 
@@ -342,7 +362,7 @@ class ScRlAgentStates:
             # print(state['sale_hist'], state['demand_hist'])
 
         else:
-            # state['sale_gamma'] = state['sale_mean']
+            # state['sale_gamma'] = state['demand_mean']
             pass
 
         if product_info.consumer_info is not None:
@@ -358,7 +378,7 @@ class ScRlAgentStates:
         entity: SupplyChainEntity,
         cur_metrics: dict,
         storage_product_quantity: Dict[int, List[int]],
-        facility_in_transit_orders: Dict[int, List[int]],
+        facility_in_transit_quantity: Dict[int, List[int]],
     ) -> None:
         if entity.skus is None:
             return
@@ -369,7 +389,7 @@ class ScRlAgentStates:
         state['inventory_in_stock'] = storage_product_quantity[entity.facility_id][
             self._global_sku_id2idx[entity.skus.id]
         ]
-        state['inventory_in_transit'] = facility_in_transit_orders[entity.facility_id][
+        state['inventory_in_transit'] = facility_in_transit_quantity[entity.facility_id][
             self._global_sku_id2idx[entity.skus.id]
         ]
 
@@ -393,7 +413,7 @@ class ScRlAgentStates:
         ppf = self._service_index_ppf_cache[service_index]
 
         state['inventory_rop'] = (
-            state['max_vlt'] * state['sale_mean'] + np.sqrt(state['max_vlt']) * state['sale_std'] * ppf
+            state['max_vlt'] * state['demand_mean'] + np.sqrt(state['max_vlt']) * state['demand_std'] * ppf
         )
 
         state['is_below_rop'] = int(state['inventory_estimated'] < state['inventory_rop'])
