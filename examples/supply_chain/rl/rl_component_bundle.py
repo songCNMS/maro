@@ -19,6 +19,7 @@ from .algorithms.dqn import get_dqn, get_dqn_policy
 from .algorithms.ppo import get_ppo, get_ppo_policy
 from .algorithms.rule_based import ManufacturerSSPolicy, ConsumerMinMaxPolicy
 from .config import ALGO, NUM_CONSUMER_ACTIONS, SHARED_MODEL, env_conf, test_env_conf
+from .config import vlt_buffer_days, other_vlt_buffer_days
 from .env_sampler import SCEnvSampler
 from .rl_agent_state import STATE_DIM
 
@@ -42,8 +43,14 @@ def entity2policy(entity: SupplyChainEntity, facility_info_dict: Dict[int, Facil
             else:
                 return f"consumer_{facility_name[:2]}.policy"
 
-        else:
-            return "consumer_baseline_policy"
+        else: 
+            if any([
+            facility_name.startswith("CA_"),
+            facility_name.startswith("TX_"),
+            facility_name.startswith("WI_"),
+            ]):
+                return "consumer_baseline_policy"
+            else: return "consumer_wh_baseline_policy"
 
     return None
 
@@ -79,8 +86,9 @@ class SupplyChainBundle(RLComponentBundle):
     def get_policy_creator(self) -> Dict[str, Callable[[], AbsPolicy]]:
         get_policy = (get_dqn_policy if ALGO == "DQN" else get_ppo_policy)
         policy_creator = {
-            "consumer_baseline_policy": lambda: ConsumerMinMaxPolicy("consumer_baseline_policy"),
-            "manufacturer_policy": lambda: ManufacturerSSPolicy("manufacture_policy"),
+            "consumer_baseline_policy": lambda: ConsumerMinMaxPolicy("consumer_baseline_policy", vlt_buffer_days),
+            "consumer_wh_baseline_policy": lambda: ConsumerMinMaxPolicy("consumer_wh_baseline_policy", other_vlt_buffer_days),
+            "manufacturer_policy": lambda: ManufacturerSSPolicy("manufacture_policy", other_vlt_buffer_days),
             "consumer.policy": partial(get_policy, STATE_DIM, NUM_CONSUMER_ACTIONS, "consumer.policy"),
             "consumer_CA.policy": partial(get_policy, STATE_DIM, NUM_CONSUMER_ACTIONS, "consumer_CA.policy"),
             "consumer_TX.policy": partial(get_policy, STATE_DIM, NUM_CONSUMER_ACTIONS, "consumer_TX.policy"),

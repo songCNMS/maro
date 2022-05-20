@@ -459,7 +459,7 @@ class World:
 
                     if facility.id not in src_facility.downstream_vlt_infos[sku_id]:
                         src_facility.downstream_vlt_infos[sku_id][facility.id] = {}
-
+                    
                     for vehicle_type, vehicle_conf in src_conf.items():
                         facility.upstream_vlt_infos[sku_id][src_facility.id][vehicle_type] = VendorLeadingTimeInfo(
                             src_facility, vehicle_type, vehicle_conf["vlt"], vehicle_conf["cost"]

@@ -8,61 +8,28 @@ from typing import List, Optional
 from examples.supply_chain.rl.config import OR_NUM_CONSUMER_ACTIONS, workflow_settings
 from maro.rl.policy import RuleBasedPolicy
 
-from examples.supply_chain.rl.config import OR_NUM_CONSUMER_ACTIONS, workflow_settings
 
-
-VLT_BUFFER_DAYS = workflow_settings["or_policy_vlt_buffer_days"]
+# VLT_BUFFER_DAYS = workflow_settings["or_policy_vlt_buffer_days"]
 
 
 class ManufacturerBaselinePolicy(RuleBasedPolicy):
     def _rule(self, states: List[dict]) -> List[int]:
         return [500] * len(states)
 
-class ManufacturerSSPolicy(ManufacturerBaselinePolicy):
-    def _rule(self, states: List[dict]) -> List[int]:
-        actions = []
-        for state in states:
-            _booked_quantity = state["product_level"] + state["in_transition_quantity"] - state["to_distributed_orders"]
-            # storage_booked_quantity = state["storage_utilization"] + state["storage_in_transition_quantity"]
-            # TODO: manufacture leading time
-            expected_vlt = round(VLT_BUFFER_DAYS * state["max_vlt"], 0)
-            _replenishment_threshold = (
-                expected_vlt * state["sale_mean"]
-                + math.sqrt(expected_vlt) * state["sale_std"] * state["service_level_ppf"]
-            )
-            quantity = (_replenishment_threshold - _booked_quantity)
-            actions.append(quantity)
-        return actions
-
-
 class ManufacturerSSPolicy(RuleBasedPolicy):
-    def _get_manufacture_action(self, state: dict) -> int:
-        _booked_quantity = state["product_level"] + state["in_transition_quantity"] - state["to_distributed_orders"]
+    def __init__(self, name: str, vlt_buffer_days: float) -> None:
+        super().__init__(name)
+        self.vlt_buffer_days = vlt_buffer_days
 
-        # TODO: manufacture leading time
-        expected_vlt = round(VLT_BUFFER_DAYS * state["max_vlt"], 0)
-        _replenishment_threshold = (
-            expected_vlt * state["sale_mean"]
-            + math.sqrt(expected_vlt) * state["sale_std"] * state["service_level_ppf"]
-        )
-
-        return _replenishment_threshold - _booked_quantity
-
-    def _rule(self, states: List[dict]) -> List[int]:
-        return [self._get_manufacture_action(state) for state in states]
-
-
-class ManufacturerSSPolicy(RuleBasedPolicy):
     def _get_manufacture_action(self, state: dict) -> int:
         _booked_quantity = state["product_level"] + state["in_transition_quantity"] - state["to_distribute_quantity"]
 
         # TODO: manufacture leading time
-        expected_vlt = round(VLT_BUFFER_DAYS * state["max_vlt"], 0)
+        expected_vlt = round(self.vlt_buffer_days * state["max_vlt"], 0)
         _replenishment_threshold = (
             expected_vlt * state["demand_mean"]
             + math.sqrt(expected_vlt) * state["demand_std"] * state["service_level_ppf"]
         )
-
         return _replenishment_threshold - _booked_quantity
 
     def _rule(self, states: List[dict]) -> List[int]:
@@ -70,11 +37,12 @@ class ManufacturerSSPolicy(RuleBasedPolicy):
 
 
 class ConsumerBasePolicy(RuleBasedPolicy):
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, vlt_buffer_days: float) -> None:
         super().__init__(name)
 
         self._booked_quantity: Optional[int] = None
         self._replenishment_threshold: Optional[float] = None
+        self.vlt_buffer_days = vlt_buffer_days
 
     def _take_action_mask(self, state: dict) -> bool:
         self._booked_quantity = (
@@ -82,7 +50,7 @@ class ConsumerBasePolicy(RuleBasedPolicy):
         )
         storage_booked_quantity = state["storage_utilization"] + state["storage_in_transition_quantity"]
         # TODO: manufacture leading time
-        expected_vlt = VLT_BUFFER_DAYS * state["max_vlt"]
+        expected_vlt = self.vlt_buffer_days * state["max_vlt"]
         self._replenishment_threshold = (
             expected_vlt * state["demand_mean"]
             + math.sqrt(expected_vlt) * state["demand_std"] * state["service_level_ppf"]

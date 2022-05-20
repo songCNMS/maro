@@ -28,7 +28,7 @@ training:
   load_episode: null
   checkpointing:
     path: "checkpoint/rl_job/supply_chain"
-    interval: 20
+    interval: 10
   logging:
     stdout: INFO
     file: DEBUG

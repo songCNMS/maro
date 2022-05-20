@@ -211,6 +211,7 @@ class StoreProductUnit(ProductUnit):
         # NOTE: super().get_sale_mean() only works for DAG-topology.
         # NOTE: Here use sale_median() instead of sale_mean() to weaken the influence of outlier.
         return super().get_sale_mean() + self.seller.sale_median()
+        # return self.seller.sale_median()
 
     def get_sale_std(self) -> float:
         return self.seller.sale_std()
@@ -219,6 +220,7 @@ class StoreProductUnit(ProductUnit):
         # NOTE: super().get_demand_mean() only works for DAG-topology.
         # NOTE: Here use demand_median() instead of demand_mean() to weaken the influence of outlier.
         return super().get_sale_mean() + self.seller.demand_median()
+        # return self.seller.demand_median()
 
     def get_max_sale_price(self) -> float:
         return self.facility.skus[self.sku_id].price

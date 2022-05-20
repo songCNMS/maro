@@ -38,7 +38,7 @@ from examples.supply_chain.common.utils import get_attributes, get_list_attribut
 from .algorithms.rule_based import ConsumerMinMaxPolicy as ConsumerBaselinePolicy
 from .config import consumer_features, distribution_features, seller_features, IDX_SELLER_DEMAND, IDX_SELLER_SOLD
 from .config import env_conf, test_env_conf, workflow_settings, DUMP_CHOSEN_VLT_INFO
-from .config import ALGO, OR_NUM_CONSUMER_ACTIONS, TEAM_REWARD, VehicleSelection
+from .config import ALGO, OR_NUM_CONSUMER_ACTIONS, TEAM_REWARD, VehicleSelection, vlt_buffer_days
 from .or_agent_state import ScOrAgentStates
 from .rl_agent_state import ScRlAgentStates, serialize_state
 
@@ -180,7 +180,7 @@ class SCEnvSampler(AbsEnvSampler):
             settings=self._env_settings,
         )
 
-        self.baseline_policy = ConsumerBaselinePolicy('baseline_eoq')
+        self.baseline_policy = ConsumerBaselinePolicy('baseline_eoq', vlt_buffer_days)
 
         self._or_agent_states: ScOrAgentStates = ScOrAgentStates(
             entity_dict=self._entity_dict,
@@ -348,6 +348,7 @@ class SCEnvSampler(AbsEnvSampler):
         )
         file_path = os.path.join(file_dir, f"{selection_method}_vendor.py")
         pprint_path = os.path.join(file_dir, f"{selection_method}_vendor_pprint.py")
+
         with open(file_path, 'w') as f:
             json.dump(default_vendor, f)
 
@@ -483,9 +484,6 @@ class SCEnvSampler(AbsEnvSampler):
             for sku_id, quantity in self._cur_metrics['facilities'][facility_id]["pending_order"].items():
                 self._facility_to_distribute_quantity[facility_id][self._global_sku_id2idx[sku_id]] = quantity
 
-            for sku_id, quantity in self._cur_metrics['facilities'][facility_id]["pending_order"].items():
-                self._facility_to_distribute_orders[facility_id][self._global_sku_id2idx[sku_id]] = quantity
-
         state = {
             id_: self._get_entity_state(id_)
             for id_ in self._agent2policy.keys()
@@ -550,7 +548,7 @@ class SCEnvSampler(AbsEnvSampler):
 
                 product_unit_id: int = self._unit2product_unit[entity_id]
                 action_quantity = int(
-                    int(action_idx) * max(1.0, self._cur_metrics["products"][product_unit_id]["sale_mean"])
+                    int(action_idx) * max(1.0, self._cur_metrics["products"][product_unit_id]["demand_mean"])
                 )
 
                 # Ignore 0 quantity to reduce action number

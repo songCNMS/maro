@@ -5,7 +5,7 @@ sys.path.append("/data/songlei/maro/")
 from os.path import dirname, join, realpath
 
 from maro.rl.training import TrainingManager
-from maro.rl.workflows.scenario import Scenario
+from maro.rl.workflows import Scenario
 from maro.utils import LoggerV2
 from examples.supply_chain.rl.config import num_products_to_sample
 
