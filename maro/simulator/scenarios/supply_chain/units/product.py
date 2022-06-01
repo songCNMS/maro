@@ -219,7 +219,7 @@ class StoreProductUnit(ProductUnit):
     def get_demand_mean(self) -> float:
         # NOTE: super().get_demand_mean() only works for DAG-topology.
         # NOTE: Here use demand_median() instead of demand_mean() to weaken the influence of outlier.
-        return super().get_sale_mean() + self.seller.demand_median()
+        return super().get_demand_mean() + self.seller.demand_median()
         # return self.seller.demand_median()
 
     def get_max_sale_price(self) -> float:

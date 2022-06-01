@@ -12,22 +12,22 @@ from maro.rl.training.algorithms import PPOParams, DiscretePPOWithEntropyTrainer
 from examples.supply_chain.rl.config import TRAIN_STEPS
 
 actor_net_conf = {
-    "hidden_dims": [256, 256, 128],
+    "hidden_dims": [256, 256, 256],
     "activation": torch.nn.Tanh,
     "softmax": True,
     "batch_norm": False,
     "head": True,
 }
 critic_net_conf = {
-    "hidden_dims": [256, 256, 128],
+    "hidden_dims": [256, 256, 256],
     "output_dim": 1,
     "activation": torch.nn.Tanh,
     "softmax": False,
     "batch_norm": False,
     "head": True,
 }
-actor_learning_rate = 0.001
-critic_learning_rate = 0.003
+actor_learning_rate = 0.0001
+critic_learning_rate = 0.0003
 
 
 class MyActorNet(DiscretePolicyNet):

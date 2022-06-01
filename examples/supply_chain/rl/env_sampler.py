@@ -706,7 +706,7 @@ class SCEnvSampler(AbsEnvSampler):
             consumer_action_dict = {}
             for entity_id in cache_element.agent_state_dict.keys():
                 entity = self._entity_dict[entity_id]
-                self._mean_reward[entity_id] += self._reward_status.get(entity_id, 0)
+                self._mean_reward[entity_id] = self._mean_reward.get(entity_id, 0) + self._reward_status.get(entity_id, 0)
                 if issubclass(entity.class_type, ConsumerUnit):
                     parent_entity = self._entity_dict[entity.parent_id]
                     if issubclass(parent_entity.class_type, StoreProductUnit):
@@ -761,10 +761,10 @@ class SCEnvSampler(AbsEnvSampler):
         if self._eval_reward > self._max_eval_reward:
             self._max_eval_reward = self._eval_reward
             self._logger.info(f"Update Max Eval Reward to: {self._max_eval_reward}")
-
+            
+            self._tracker.render_facility_balance_and_reward(facility_types=(OuterRetailerFacility))
             if workflow_settings["plot_render"]:
                 self._logger.info("Start render...")
-                self._tracker.render_facility_balance_and_reward(facility_types=(OuterRetailerFacility))
                 self._tracker.render_all_sku(entity_types=(ConsumerUnit, ManufactureUnit))
 
             if workflow_settings["dump_product_metrics"]:
@@ -779,7 +779,7 @@ class SCEnvSampler(AbsEnvSampler):
                 self._logger.info("product metrics dumped to csv")
 
         self._logger.info(f"Max Eval Reward: {self._max_eval_reward}")
-        self._logger.debug(f"Eval Reward List: {self._eval_reward_list}")
+        self._logger.info(f"Eval Reward List: {self._eval_reward_list}")
         self._mean_reward = {entity_id: val / self._step_idx for entity_id, val in self._mean_reward.items()}
 
         if DUMP_CHOSEN_VLT_INFO:

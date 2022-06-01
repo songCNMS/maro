@@ -175,6 +175,8 @@ class SimulationTracker:
 
     def _render_sku(self, entity_id: int) -> None:
         entity = self._entity_dict[entity_id]
+        if self._sku_metas[entity.skus.id].name.startswith("COMP"):
+            return
         i = self._entity_id2idx_in_status[entity_id]
 
         # TODO: only data in eval period used, no need to update before eval period.

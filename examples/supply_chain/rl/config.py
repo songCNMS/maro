@@ -21,8 +21,8 @@ consumer_features = ("order_base_cost", "latest_consumptions")
 IDX_CONSUMER_ORDER_BASE_COST, IDX_CONSUMER_LATEST_CONSUMPTIONS = 0, 1
 
 other_vlt_buffer_days = 3.0
-vlt_buffer_days = 1.5
-num_products_to_sample = 20
+vlt_buffer_days = 2.0
+num_products_to_sample = 500
 ALGO="PPO"
 assert ALGO in ["DQN", "EOQ", "PPO"], "wrong ALGO"
 TEAM_REWARD = False
@@ -42,14 +42,21 @@ else: vehicle_manner_str = "default"
 TOPOLOGY = f"SCI_{num_products_to_sample}_{vehicle_manner_str}"
 # TOPOLOGY = "SCI_1.1"
 
-TRAIN_STEPS = 120
-EVAL_STEPS = 120
+DUMP_CHOSEN_VLT_INFO = False
 
-PLOT_RENDER = True
+if DUMP_CHOSEN_VLT_INFO:
+    TRAIN_STEPS = 1
+    EVAL_STEPS = 1
+    PLOT_RENDER = False
+else:
+    TRAIN_STEPS = 120
+    EVAL_STEPS = 120
+    PLOT_RENDER = True
+
+
 DUMP_PRODUCT_METRICS = True
 LOG_CONSUMER_ACTIONS = True
 
-DUMP_CHOSEN_VLT_INFO = False
 
 env_conf = {
     "scenario": "supply_chain",

@@ -58,8 +58,8 @@ class ConsumerBasePolicy(RuleBasedPolicy):
 
         capacity_mask = storage_booked_quantity <= state["storage_capacity"]
         replenishment_mask = self._booked_quantity <= self._replenishment_threshold
-
-        return capacity_mask and replenishment_mask
+        return replenishment_mask
+        # return capacity_mask and replenishment_mask
 
     @abstractmethod
     def _get_action_quantity(self, state: dict) -> int:
